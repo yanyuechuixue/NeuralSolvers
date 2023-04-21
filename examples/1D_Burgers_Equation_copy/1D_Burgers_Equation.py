@@ -117,6 +117,7 @@ if __name__ == "__main__":
     
     # train pinn
     pinn.fit(50000, checkpoint_path='checkpoint.pt', restart=True, logger=logger, lbfgs_finetuning=False, writing_cycle=1000)
+    logger.log_ptfiles()
 
 
 

@@ -63,6 +63,8 @@ class WandbLogger(LoggerInterface):
 
         """
         wandb.log({name: wandb.Histogram(histogram)}, step=epoch)
+    def log_ptfiles(self):
+        wandb.save("best_model_pinn.pt")
 
 
 
