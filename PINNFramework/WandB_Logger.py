@@ -64,7 +64,13 @@ class WandbLogger(LoggerInterface):
         """
         wandb.log({name: wandb.Histogram(histogram)}, step=epoch)
     def log_ptfiles(self):
-        wandb.save("best_model_pinn.pt")
+        for i in range(10):
+            try:
+                wandb.save("best_model_pinn.pt")
+                break
+            except:
+                from time import sleep
+                sleep(5)
 
 
 

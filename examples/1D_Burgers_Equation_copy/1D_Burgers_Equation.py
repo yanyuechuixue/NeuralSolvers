@@ -149,5 +149,6 @@ if __name__ == "__main__":
     plt.ylabel(r'$x$')
     plt.title(r"$u(x,t)$")
     plt.colorbar()
+    plt.savefig("results.png")
     plt.show()
 
