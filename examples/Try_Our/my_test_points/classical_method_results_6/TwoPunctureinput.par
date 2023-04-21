@@ -1,0 +1,27 @@
+#$Id: TwoPunctureinput.par,v 1.1 2012/07/02 11:03:34 zjcao Exp $
+#  -----0-----> y
+#   -      +      use Brugmann's convention
+ABE::mp     = -0.0813
+ABE::mm     = -0.0813
+# b = D/2
+ABE::b      = 0.2
+ABE::P_plusx   = -0.04 
+ABE::P_plusy   = -0.001
+ABE::P_plusz   = 0
+ABE::P_minusx  = 0.04
+ABE::P_minusy  = 0.001
+ABE::P_minusz  = 0
+ABE::S_plusx   = 0
+ABE::S_plusy   = 0
+ABE::S_plusz   = 0
+ABE::S_minusx  = 0
+ABE::S_minusy  = 0
+ABE::S_minusz  = 0
+ABE::Mp     = 0.15
+ABE::Mm     = 0.15
+ABE::admtol   = 1.e-5
+ABE::Newtontol  = 5.e-12
+ABE::nA      = 100
+ABE::nB      = 100
+ABE::nphi     = 26
+ABE::Newtonmaxit = 25
