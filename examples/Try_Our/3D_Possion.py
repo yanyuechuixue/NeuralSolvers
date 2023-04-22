@@ -27,12 +27,10 @@ class InitialConditionDataset(Dataset):
           n0 (int)
         """
         super(type(self)).__init__()
-        data = scipy.io.loadmat('burgers_shock.mat')
+        npx,npy,npz,npvalue = np.loadtxt("./my_test_points/TwoPunctures_0.5.0.5/grid_y_axis.dat", delimiter=" ", unpack=True)
 
-        t = data['t'].flatten()[:, None]
-        x = data['x'].flatten()[:, None]
-
-        Exact = np.real(data['usol']).T
+        
+        Exact = npvalue
 
         X, T = np.meshgrid(x, t)
         xx1 = np.hstack((X[0:1, :].T, T[0:1, :].T))
@@ -46,7 +44,7 @@ class InitialConditionDataset(Dataset):
         u_train = np.vstack([uu1, uu2, uu3])
 
         idx = np.random.choice(X_u_train.shape[0], n0, replace=False)
-        self.X_u_train = X_u_train[idx, :]
+        self.X_u_train = 
         self.u_train = u_train[idx, :]
 
     def __len__(self):
@@ -81,6 +79,57 @@ sampler = pf.LHSSampler()
 
 # geometry
 geometry = pf.NDCube(lb,ub,N_f,N_f,sampler)
+
+# define our equations here. we can ref the wave_eq below.
+def wave_eq(x, u):
+
+    grads = torch.ones(u.shape, device=u.device)  # move to the same device as prediction
+
+    grad_u = grad(u, x, create_graph=True, grad_outputs=grads)[0]  # (z, y, x, t)
+
+    u_z = grad_u[:, 0]
+    u_y = grad_u[:, 1]
+    u_x = grad_u[:, 2]
+    u_t = grad_u[:, 3]
+
+    grads = torch.ones(u_z.shape, device=u_z.device) # update for shapes
+
+    # calculate second order derivatives
+    u_zz = grad(u_z, x, create_graph=True, grad_outputs=grads)[0][:, 0]  # (z, y, x, t)
+    u_yy = grad(u_y, x, create_graph=True, grad_outputs=grads)[0][:, 1]
+    u_xx = grad(u_x, x, create_graph=True, grad_outputs=grads)[0][:, 2]
+    u_tt = grad(u_t, x, create_graph=True, grad_outputs=grads)[0][:, 3]
+
+    f_u = u_tt - (u_zz + u_yy + u_xx)
+    #relu6 = torch.nn.ReLU6()
+    #propagation_error = float(1./6.) * relu6(u_y*u_t)
+    return f_u
+
+
+def wave_eq(x, u):
+
+    grads = torch.ones(u.shape, device=u.device)  # move to the same device as prediction
+
+    grad_u = grad(u, x, create_graph=True, grad_outputs=grads)[0]  # (z, y, x, t)
+
+    u_z = grad_u[:, 0]
+    u_y = grad_u[:, 1]
+    u_x = grad_u[:, 2]
+    u_t = grad_u[:, 3]
+
+    grads = torch.ones(u_z.shape, device=u_z.device) # update for shapes
+
+    # calculate second order derivatives
+    u_zz = grad(u_z, x, create_graph=True, grad_outputs=grads)[0][:, 0]  # (z, y, x, t)
+    u_yy = grad(u_y, x, create_graph=True, grad_outputs=grads)[0][:, 1]
+    u_xx = grad(u_x, x, create_graph=True, grad_outputs=grads)[0][:, 2]
+    u_tt = grad(u_t, x, create_graph=True, grad_outputs=grads)[0][:, 3]
+
+    f_u = u_tt - (u_zz + u_yy + u_xx)
+    #relu6 = torch.nn.ReLU6()
+    #propagation_error = float(1./6.) * relu6(u_y*u_t)
+    return f_u
+
 
 # define underlying PDE
 def burger1D(x, u):

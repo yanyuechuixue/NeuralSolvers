@@ -1,23 +1,22 @@
-from torch.utils.data import DataLoader
+# from torch.utils.data import DataLoader
 from IC_Dataset import ICDataset as ICDataset
 from PDE_Dataset import PDEDataset as PDEDataset
-from TD_BC_Dataset import TDBCDataset as DTDataset
+# from TD_BC_Dataset import TDBCDataset as DTDataset
 from BC_Dataset import BoundaryDataset as BCDataset
 from argparse import ArgumentParser
 import sys
-from multiprocessing import Process, Value
+# from multiprocessing import Process, Value
 import numpy as np
 import torch
-import horovod.torch as hvd
 sys.path.append('../..')  # PINNFramework etc.
 import PINNFramework as pf
 import wandb
 import matplotlib.pyplot as plt
 from torch.autograd import grad
-import pathlib
-from pynvml import *
-from pynvml.smi import nvidia_smi
-import time
+# import pathlib
+# from pynvml import *
+# from pynvml.smi import nvidia_smi
+# import time
 
 
 def visualize_gt_diagnostics(dataset, time_step):
@@ -103,43 +102,6 @@ class VisualisationCallback(pf.callbacks.Callback):
             plt.close('all')
 
 
-class PerformanceCallback(pf.callbacks.Callback):
-    def __init__(self, rank):
-        self.lock = Value('i', 1)
-        # start benchmark process
-        print('benchmark')
-        sys.stdout.flush()
-        self.rank = rank
-        if rank % 6 == 0:
-            print('start benchmark')
-            sys.stdout.flush()
-            benchmark_process = Process(target=self.__call__, args=())
-            benchmark_process.start()
-
-    def __call__(self):
-        nvmlInit()
-        vars()[self.rank] = np.array([])
-        timestamps = np.array([])
-        start_time = time.time()
-        deviceIdx = hvd.local_rank()  # GPU id
-        nvsmi = nvidia_smi.getInstance()
-        while self.lock.value != 0:
-            time.sleep(10)
-            res = nvsmi.DeviceQuery()
-            vars()[hvd.rank()] = np.append(vars()[hvd.rank()], res['gpu'])
-            timestamps = np.append(timestamps, time.time() - start_time)
-        runtime = time.time() - start_time
-        vars()[hvd.rank()][0]["runtime"] = runtime
-        vars()[hvd.rank()][0]["timestamps"] = timestamps.shape
-        vars()[hvd.rank()] = np.append(vars()[hvd.rank()], timestamps)
-        np.save("/beegfs/global0/ws/s7520458-pinn_wave/Neuralexamples/3D_Wave_Equation/benchmarks/exp_{}_gpu_s2d_util_{}".format(1,
-                                                                                                          hvd.rank()),
-                vars()[hvd.rank()])
-        print("done")
-        sys.stdout.flush()
-        return
-
-
 def wave_eq(x, u):
 
     grads = torch.ones(u.shape, device=u.device)  # move to the same device as prediction
@@ -166,8 +128,8 @@ def wave_eq(x, u):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--name", dest="name", type=str)
-    parser.add_argument("--path", dest="path", type=str)
+    parser.add_argument("--name", dest="name", type=str,default='3D_Wave_Equation')
+    parser.add_argument("--path", dest="path", type=str,default='./training/')
     parser.add_argument("--iteration", dest="iteration", type=int, default=2000)
     parser.add_argument("--n0", dest="n0", type=int, default=int(134e6))
     parser.add_argument("--nf", dest="nf", type=int, default=int(130e9))
@@ -196,24 +158,29 @@ if __name__ == "__main__":
     parser.add_argument("--weight_bc",dest="weight_bc",type=float)
     parser.add_argument("--weight_pde",dest="weight_pde",type=float)
     args = parser.parse_args()
-    ic_dataset = ICDataset(path=args.path,
-                           iteration=args.iteration,
-                           n0=args.n0,
-                           batch_size=args.batch_size_n0,
-                           max_t=args.max_t,
-                           normalize_labels=args.normalize_labels)
-                           
-    initial_condition = pf.InitialCondition(ic_dataset, "Initial Condition",weight=args.weight_ic)
+    # this is the ic_dataset, if we are procedure with a PDE that do not have time dependence, we can set the time to None.
+    if True:
+        ic_dataset = ICDataset(path=args.path,
+                            iteration=args.iteration,
+                            n0=args.n0,
+                            batch_size=args.batch_size_n0,
+                            max_t=args.max_t,
+                            normalize_labels=args.normalize_labels)
+                            
+        initial_condition = pf.InitialCondition(ic_dataset, "Initial Condition",weight=args.weight_ic)
+        
     pde_dataset = PDEDataset(args.path, args.nf, args.batch_size_nf, args.iteration, args.max_t)
     pde_condition = pf.PDELoss(pde_dataset, wave_eq, "Wave Equation",weight=args.weight_pde)
 
-    bc_dataset = DTDataset(args.path, args.iteration, args.nb, args.batch_size_nb)
-    dt_boundary = pf.TimeDerivativeBC(bc_dataset, "Time Derivative Boundary",weight=args.weight_bc)
+    # bc_dataset = DTDataset(args.path, args.iteration, args.nb, args.batch_size_nb)
+    bc_dataset = BCDataset(args.path, args.iteration, args.nb, args.batch_size_nb) # may be wrong
+    robin_condition = pf.RobinBC(bc_dataset, "Robin Boundary",weight=args.weight_bc) # may be wrong
+    # dt_boundary = pf.TimeDerivativeBC(bc_dataset, "Time Derivative Boundary",weight=args.weight_bc)
     #boundary_x = pf.PeriodicBC(BCDataset(ic_dataset.lb, ic_dataset.ub, args.nb, args.batch_size_nb, 2), 0, "Boundary x")
     #boundary_y = pf.PeriodicBC(BCDataset(ic_dataset.lb, ic_dataset.ub, args.nb, args.batch_size_nb, 1), 0, "Boundary y")
     #boundary_z = pf.PeriodicBC(BCDataset(ic_dataset.lb, ic_dataset.ub, args.nb, args.batch_size_nb, 0), 0, "Boundary z")
 
-    boundary_conditions = [dt_boundary]
+    boundary_conditions = [robin_condition]
 
     if args.activation == 'tanh':
         activation = torch.tanh

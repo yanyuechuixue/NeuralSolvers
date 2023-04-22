@@ -8,7 +8,7 @@ import openpmd_api as io
 class PDEDataset(Dataset):
     def __init__(self, path, nf, batch_size, iteration, tmax):
         """
-        Constructor of the PDE Dataset
+        Constructor of the PDE Dataset, i.e., the sampling of the residual points
 
         Args:
             lb: defines the lower bound of the spatial temporal domain
@@ -16,7 +16,7 @@ class PDEDataset(Dataset):
             nf: defines the number of residual points used in total
             batch_size: defines the number of residual points yielded in a batch
         """
-
+        print("Whay using 128~30 in __getitem__?")
         self.batch_size = batch_size
         self.nf = nf
 
@@ -44,9 +44,10 @@ class PDEDataset(Dataset):
         """
         z = np.random.normal(128, 30, size=self.batch_size).reshape(-1, 1) * self.cell_depth
         x = np.random.normal(128, 30, size=self.batch_size).reshape(-1, 1) * self.cell_width  # reduce sampling in x-direction
-        t = np.random.uniform(self.iteration, self.tmax, size=self.batch_size).reshape(-1, 1)
+        # t = np.random.uniform(self.iteration, self.tmax, size=self.batch_size).reshape(-1, 1)
         y = np.random.uniform(0, 2047, size=self.batch_size).reshape(-1, 1) * self.cell_height
-        xf = np.concatenate([z, y, x, t], axis=1)
+        # xf = np.concatenate([z, y, x, t], axis=1)
+        xf = np.concatenate([z, y, x], axis=1)
         return Tensor(xf)
 
 

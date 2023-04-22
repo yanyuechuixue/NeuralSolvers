@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 import sys
 import matplotlib.pyplot as plt
 from torch.autograd import grad
-
+from punctureEq import twopuncture_eq
 sys.path.append('../..')  # PINNFramework etc.
 import PINNFramework as pf
 from IC_Dataset import ICDataset as ICDataset
@@ -48,8 +48,8 @@ def wave_eq(x, u):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--name", dest="name", type=str)
-    parser.add_argument("--path", dest="path", type=str)
+    parser.add_argument("--name", dest="name", type=str,default='3D_Wave_Equation')
+    parser.add_argument("--path", dest="path", type=str,default='./training/')
     args = parser.parse_args()
     dataset_2000 = ICDataset(args.path, 2000, 5000, 0, 2100, False)
     print("cell_depth:", dataset_2000.cell_depth)
